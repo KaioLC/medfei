@@ -1,5 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+import os
 
 # configurando o app
 app = Flask(__name__)
@@ -7,11 +9,53 @@ app = Flask(__name__)
 # configurando o CORS para permitir requisições de qualquer origem
 CORS(app)
 
+# criando o arquivo do banco de dados SQLite
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(basedir, 'project.db')
 
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+db = SQLAlchemy(app) # inicializa o SQLAlchemy
+
+# definindo a tabela user
+class User(db.Model):
+    
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username
+        }
+
+# rota pra adicionar um usuario
+@app.route("/api/users", methods=['POST'])
+def add_user():
+
+    data = request.json
+    new_user = User(username=data['username'])
+    db.session.add(new_user)
+    db.session.commit()
+    
+    return jsonify(message="Usuário cadastrado"), 201
+
+# rota pra listar usuarios
+@app.route("/api/users", methods=['GET'])
+def get_users():
+
+    users_from_db = db.session.execute(db.select(User)).scalars()
+    users_list = [user.to.dict() for user in users_from_db]
+
+    return jsonify(users=users_list)
+
+
+# rota de teste
 @app.route("/api/hello")
-
 def hello_word():
     return jsonify(message="Flask!")
+
+
 
 # rodando o servidor
 if __name__ == "__main__":
