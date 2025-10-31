@@ -1,3 +1,7 @@
 *.session.sql
 *.db
 *.db-journal
+
+backend/venv/
+backend/__pycache__/
+*.pyc
