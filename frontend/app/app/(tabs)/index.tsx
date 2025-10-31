@@ -1,8 +1,17 @@
 import { StyleSheet, Text, View, Button, TextInput, Alert, ScrollView, SafeAreaView } from 'react-native';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Constants from 'expo-constants'; // tira o hardcode do IP
 
-const API_URL = 'http://192.168.0.109:5000';
+// pega o IP dinamicamente
+const hostUri = Constants.expoConfig?.extra?.hostUri;
+
+const hostname = hostUri ? hostUri.split(':')[0] : 'localhost';
+
+
+const API_URL =  `http://${hostname}:5000`; // porta do backend flask;
+
+console.log(`Conectando ao backend em: ${API_URL}`); // debugando o URL do back
 
 const api = axios.create({
   baseURL: API_URL,
