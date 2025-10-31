@@ -9,16 +9,16 @@ app = Flask(__name__)
 # configurando o CORS para permitir requisições de qualquer origem
 CORS(app)
 
-# criando o arquivo do banco de dados SQLite
+# localização do banco de dados
 basedir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(basedir, 'project.db')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}' # conectando com o banco de dados
 db = SQLAlchemy(app) # inicializa o SQLAlchemy
 
 # definindo a tabela user
 class User(db.Model):
-    
+
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -33,12 +33,12 @@ class User(db.Model):
 @app.route("/api/users", methods=['POST'])
 def add_user():
 
-    data = request.json
+    data = request.json # recebe o json do frontend e transforma em dict
     new_user = User(username=data['username'])
     db.session.add(new_user)
     db.session.commit()
     
-    return jsonify(message="Usuário cadastrado"), 201
+    return jsonify(message="Usuário cadastrado"), 201 # codigo 201 "Created"
 
 # rota pra listar usuarios
 @app.route("/api/users", methods=['GET'])

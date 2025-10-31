@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:medfei}/backend/project.db",
+            "name": "medfei"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
