@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
@@ -45,7 +45,7 @@ def add_user():
 def get_users():
 
     users_from_db = db.session.execute(db.select(User)).scalars()
-    users_list = [user.to.dict() for user in users_from_db]
+    users_list = [user.to_dict() for user in users_from_db]
 
     return jsonify(users=users_list)
 
