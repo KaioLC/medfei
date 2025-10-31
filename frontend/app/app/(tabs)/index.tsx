@@ -1,64 +1,149 @@
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View, Button, TextInput, Alert, ScrollView, SafeAreaView } from 'react-native';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Constants from 'expo-constants'; // tira o hardcode do IP
 
-const API_URL = 'http://192.168.0.109:5000';
+// pega o IP dinamicamente
+const hostUri = Constants.expoConfig?.extra?.hostUri;
 
-// instância do axios
+const hostname = hostUri ? hostUri.split(':')[0] : 'localhost';
+
+
+const API_URL =  `http://${hostname}:5000`; // porta do backend flask;
+
+console.log(`Conectando ao backend em: ${API_URL}`); // debugando o URL do back
+
 const api = axios.create({
   baseURL: API_URL,
 });
 
+// molde do usuario
+type User = { 
+  id: number;
+  username: string;
+}
+
 export default function HomeScreen() {
-  // para guardar a mensagem da API
-  const [message, setMessage] = useState('Carregando...');
 
-  // para buscar os dados
-  const fetchHello = () => {
-    setMessage('Buscando dados...');
+  // estado para a lista de users do banco
+  const [users, setUsers] = useState<User[]>([]); // definindo uma lista de usuarios pro estado
+  
+  // estados para os formulários
+  const [username, setUsername] = useState('');
 
-    api.get('/api/hello') //chamada a função hello da API
+  // busca os users
+  const fetchUsers = () => {
+    api.get('/api/users') // chama a rota GET /api/users
       .then(response => {
-        // salva a mensagem no "estado"
-        setMessage(response.data.message);
+        setUsers(response.data.users); // salva a lista de usuários no estado
       })
       .catch(error => {
-        // mostra o erro
-        console.error("Erro de rede:", error);
-        setMessage('Falha ao conectar na API!');
+        console.error("Erro ao buscar usuários:", error);
+        Alert.alert("Erro", "Não foi possível buscar os usuários.");
       });
   };
+  // busca os users ao carregar o componente
   useEffect(() => {
-    fetchHello();
+    fetchUsers(); // busca os usuários ao carregar
   }, []);
 
+  // salva o novo usuário
+  const handleSaveUser = () => {
+
+    // nao deixa salvar se o nome estiver vazio
+    if (!username) {
+      Alert.alert("Erro", "Por favor, preencha o nome e o email.");
+      return;
+    }
+
+    // envia os dados do estado para o backend
+    api.post('/api/users', { username })
+      .then(response => {
+
+        // sem erros
+        Alert.alert("Sucesso", response.data.message); // exibe a mensagem do flask
+        setUsername(''); //limpa o campo
+        fetchUsers(); // atualiza a lista de usuarios na tela
+        }) 
+      .catch(error => {
+        console.error("Erro ao salvar usuário:", error);
+        Alert.alert("Erro", "Não foi possível salvar o usuário.");
+      });
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Mensagem do Backend:</Text>
-      <Text style={styles.messageText}>{message}</Text>
-      
-      <Button title="Atualizar Mensagem" onPress={fetchHello} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+
+        <Text style={styles.title}>Adicionar Novo Usuário</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Nome de usuário"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+        />
+        <Button title="Salvar Usuário no Banco" onPress={handleSaveUser} />
+        
+        <Text style={styles.listTitle}>Usuários no Banco</Text>
+        
+        {users.length === 0 ? (
+          <Text>Nenhum usuário cadastrado.</Text>
+        ) : (
+          users.map(user => (
+            <View key={user.id} style={styles.userItem}>
+              <Text style={styles.userText}>ID: {user.id}</Text>
+              <Text style={styles.userText}>{user.username}</Text>
+            </View>
+          ))
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  container: {
     padding: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
   },
-  messageText: {
-    fontSize: 24,
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 20,
+  input: {
+    height: 44,
+    backgroundColor: '#fff',
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  listTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 30,
+    marginBottom: 10,
+    borderTopColor: '#ccc',
+    borderTopWidth: 1,
+    paddingTop: 20,
+  },
+  userItem: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderColor: '#eee',
+    borderWidth: 1,
+  },
+  userText: {
+    fontSize: 16,
   },
 });
