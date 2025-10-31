@@ -17,7 +17,7 @@ export default function HomeScreen() {
   const fetchHello = () => {
     setMessage('Buscando dados...');
 
-    api.get('/api/hello') //chamada para a rota que do Flask
+    api.get('/api/hello') //chamada a função hello da API
       .then(response => {
         // salva a mensagem no "estado"
         setMessage(response.data.message);
