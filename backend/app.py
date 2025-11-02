@@ -42,7 +42,7 @@ class Doctor(db.Model):
 
     __tablename__ = 'doctors'
     id = db.Column(db.Integer, primary_key=True)
-    crm = db.Column(db.Integer(20), unique=True, nullable=False)
+    crm = db.Column(db.Integer, unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     specialty = db.Column(db.String(120), nullable=False)
 
@@ -74,12 +74,14 @@ class Appointment(db.Model):
 
 
 # rota pra adicionar um usuario
-@app.route("/api/users", methods=['POST'])
+@app.route("/api/register", methods=['POST'])
 def add_user():
 
     data = request.json # recebe o json do frontend e transforma em dict
     username = data.get('username')
     password = data.get('password')
+    cpf = data.get('cpf')
+    email = data.get('email')
     
     # verificando se o usuario ta preenchido
     if not username or not password:
@@ -87,17 +89,34 @@ def add_user():
     
 
     # verificando se o usuario já existe
-    existing_user = User.query.filter_by(username=username).scalar_one_or_none()
+    existing_user = db.session.execute(
+        db.select(User).filter_by(username=username)
+    ).scalar_one_or_none()
 
     if existing_user:
         return jsonify(message="Usuário já cadastrado"), 409 # 409 é codigo de conflito
     
+    existing_email = db.session.execute(
+        db.select(User).filter_by(email=email)
+    ).scalar_one_or_none()
+
+    if existing_email:
+        return jsonify(message="Email já cadastrado"), 409 # 409 é codigo de conflito
+    
+    existing_cpf = db.session.execute(
+        db.select(User).filter_by(cpf=cpf)
+    ).scalar_one_or_none()
+
+    if existing_cpf:
+        return jsonify(message="CPF já cadastrado"), 409 # 409 é codigo de conflito
+
     hashed_password = generate_password_hash(password)
 
     new_user = User(
         username=username,
         email=data.get('email'),
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        cpf=cpf
     )
 
     db.session.add(new_user)
