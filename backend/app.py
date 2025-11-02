@@ -29,6 +29,23 @@ class User(db.Model):
             'username': self.username
         }
 
+# definindo a tabela doctor
+class Doctor(db.Model):
+
+    __tablename__ = 'doctors'
+    id = db.Column(db.Integer, primary_key=True)
+    crm = db.Column(db.Integer(20), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    specialty = db.Column(db.String(120), nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'specialty': self.specialty
+        }
+    
+
 # rota pra adicionar um usuario
 @app.route("/api/users", methods=['POST'])
 def add_user():
