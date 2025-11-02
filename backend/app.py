@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
+from datetime import datetime, timezone
 import os
 
 # configurando o app
@@ -58,7 +59,8 @@ class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('doctors.id'), nullable=False)
-    appointment_date = db.Column(db.String(120), nullable=False)
+    appointment_date = db.Column(db.DateTime(120), nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
 
 
     def to_dict(self):
@@ -66,9 +68,9 @@ class Appointment(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'doctor_id': self.doctor_id,
-            'appointment_date': self.appointment_date
+            'appointment_date': self.appointment_date,
+            'created_at': self.created_at
         }
-
 
 
 # rota pra adicionar um usuario
