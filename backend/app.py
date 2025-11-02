@@ -3,6 +3,8 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
 from datetime import datetime, timezone
+from validate_docbr import CPF # validar CPF
+from email_validator import validate_email, EmailNotValidError # validar email
 import os
 
 # configurando o app
@@ -75,7 +77,7 @@ class Appointment(db.Model):
 
 # rota pra adicionar um usuario
 @app.route("/api/register", methods=['POST'])
-def add_user():
+def register_user():
 
     data = request.json # recebe o json do frontend e transforma em dict
     username = data.get('username')
@@ -84,9 +86,25 @@ def add_user():
     email = data.get('email')
     
     # verificando se o usuario ta preenchido
-    if not username or not password:
+    if not username or not password or not email or not cpf:
         return jsonify(message="Preencha todos os campos*"), 400 # 400 é codigo de bad request
     
+
+    # validando o email dado
+    try:
+        valid_email_data = validate_email(email, check_deliverability=False)
+        email = valid_email_data.normalized
+    
+    except EmailNotValidError as e: # email nao valido
+        return jsonify(message=f"Email inválido: {str(e)}"), 400
+
+
+    # validando o cpf dado
+    cpf_validator = CPF()
+    if not cpf_validator.validate(cpf):
+        return jsonify(message="CPF inválido"), 400
+    
+    clean_cpf = "".join(filter(str.isdigit, cpf))
 
     # verificando se o usuario já existe
     existing_user = db.session.execute(
@@ -104,7 +122,7 @@ def add_user():
         return jsonify(message="Email já cadastrado"), 409 # 409 é codigo de conflito
     
     existing_cpf = db.session.execute(
-        db.select(User).filter_by(cpf=cpf)
+        db.select(User).filter_by(cpf=clean_cpf)
     ).scalar_one_or_none()
 
     if existing_cpf:
@@ -116,7 +134,7 @@ def add_user():
         username=username,
         email=data.get('email'),
         password_hash=hashed_password,
-        cpf=cpf
+        cpf=clean_cpf
     )
 
     db.session.add(new_user)
@@ -164,7 +182,7 @@ def get_doctors():
     return jsonify(doctors=doctors_list)
 
 # rota pra adicionar um medico (implementar no hardcode)
-@app.route("/api/doctors", methods=['POST'])
+@app.route("/api/register_doctor", methods=['POST'])
 def add_doctor():
 
     data = request.json
@@ -179,7 +197,7 @@ def add_doctor():
     return jsonify(message="Médico cadastrado"), 201
 
 # rota pra adicionar uma consulta
-@app.route("/api/appointments", methods=['POST'])
+@app.route("/api/register_appointments", methods=['POST'])
 def add_appointment():
 
     data = request.json
