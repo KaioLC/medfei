@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
 from datetime import datetime, timezone
 from validate_docbr import CPF # validar CPF
@@ -19,6 +20,9 @@ db_path = os.path.join(basedir, 'project.db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}' # conectando com o banco de dados
 db = SQLAlchemy(app) # inicializa o SQLAlchemy
+
+migrate = Migrate(app, db) # inicializa o Flask-Migrate
+
 
 # definindo a tabela user
 class User(db.Model):
@@ -45,6 +49,7 @@ class Doctor(db.Model):
     __tablename__ = 'doctors'
     id = db.Column(db.Integer, primary_key=True)
     crm = db.Column(db.Integer, unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     specialty = db.Column(db.String(120), nullable=False)
 
@@ -52,7 +57,9 @@ class Doctor(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'specialty': self.specialty
+            'specialty': self.specialty,
+            'email': self.email,
+            'crm': self.crm
         }
     
 class Appointment(db.Model):
@@ -181,21 +188,6 @@ def get_doctors():
 
     return jsonify(doctors=doctors_list)
 
-# rota pra adicionar um medico (implementar no hardcode)
-@app.route("/api/register_doctor", methods=['POST'])
-def add_doctor():
-
-    data = request.json
-    new_doctor = Doctor(
-        crm=data['crm'],
-        name=data['name'],
-        specialty=data['specialty']
-    )
-    db.session.add(new_doctor)
-    db.session.commit()
-
-    return jsonify(message="Médico cadastrado"), 201
-
 # rota pra adicionar uma consulta
 @app.route("/api/register_appointments", methods=['POST'])
 def add_appointment():
@@ -212,10 +204,22 @@ def add_appointment():
     return jsonify(message="Consulta agendada"), 201
 
 
-# rota de teste
-@app.route("/api/hello")
-def hello_word():
-    return jsonify(message="Flask!")
+# seeding medicos no banco de dados
+@app.cli.command("seed_db_doctors")
+def seed_db_doctors():
+
+    print("Adicionando médicos ao banco de dados...")
+    
+    if db.session.execute(db.select(Doctor)).scalar_one_or_none() is None:
+        doc1 = Doctor(name="Dr. Ana Silva", email="ana.silva@medfei.com", crm="123456-SP", specialty="Cardiologia")
+        doc2 = Doctor(name="Dr. Bruno Costa", email="bruno.costa@medfei.com", crm="789012-SP", specialty="Dermatologia")
+        doc3 = Doctor(name="Dr. Carla Dias", email="carla.dias@medfei.com", crm="345678-RJ", specialty="Pediatria")
+
+        db.session.add_all([doc1, doc2, doc3])
+        db.session.commit()
+        print("Médicos adicionados com sucesso!")
+    else:
+        print("Já existem médicos no banco de dados.")
 
 
 
