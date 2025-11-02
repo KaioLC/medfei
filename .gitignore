@@ -5,3 +5,11 @@
 backend/venv/
 backend/__pycache__/
 *.pyc
+
+.expo/
+
+.vscode/*
+
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
