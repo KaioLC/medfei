@@ -2,7 +2,6 @@ import { StyleSheet, Text, View, Button, TextInput, Alert, ScrollView, SafeAreaV
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Constants from 'expo-constants'; // tira o hardcode do IP
-import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 // pegando o IP dinamicamente
 
