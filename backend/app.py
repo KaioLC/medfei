@@ -22,6 +22,7 @@ class User(db.Model):
 
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
+    cpf = db.Column(db.String(20), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
@@ -31,7 +32,8 @@ class User(db.Model):
         return {
             'id': self.id,
             'username': self.username,
-            'email': self.email
+            'email': self.email,
+            'cpf': self.cpf
         }
 
 # definindo a tabela doctor
@@ -108,6 +110,28 @@ def get_users():
     users_list = [user.to_dict() for user in users_from_db]
 
     return jsonify(users=users_list)
+
+# rota para login de usuario
+@app.route("/api/login", methods=['POST'])
+def login_user():
+    data = request.json
+    username = data.get('username')
+    password_attempt = data.get('password')
+
+    # validando os campos preenchidos
+    if not username or not password_attempt:
+        return jsonify(message="Preencha todos os campos*"), 400
+    
+    # buscando o usuario no banco de dados
+    user = db.session.execute(
+        db.select(User).filter_by(username=username)
+    ).scalar_one_or_none()
+
+    # verificando se o usuario existe + senha correta
+    if user and check_password_hash(user.password_hash, password_attempt):
+        return jsonify(message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
+    else:
+        return jsonify(message="Usuário ou senha incorretos"), 401 # 401 é codigo de unauthorized
 
 # rota pra listar os medicos
 @app.route("/api/doctors", methods=['GET'])
