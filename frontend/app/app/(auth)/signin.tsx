@@ -3,32 +3,32 @@ import { useState } from 'react';
 import { Link, router } from 'expo-router';
 import api from '../../utils/api'; // api centralizada
 import { GlobalStyles } from '../../constants/theme';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // responsavel por salvar o token
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginScreen() {
 
-  const [username, setUsername] = useState('');
+  const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
-
+  const { login } = useAuth(); // pega a função de login do contexto
   const handleLogin = async () => {
-    if (!username || !password) {
+    if (!cpf || !password) {
       Alert.alert("Erro", "Por favor, preencha o nome de usuário e a senha.");
       return;
     }
 
     try {
 
-      const response = await api.post('/api/login', { username, password }); // fazendo login
+      const response = await api.post('/api/login', { cpf, password }); // fazendo login
 
       const { access_token, message } = response.data; // coleta o token
 
       if (access_token) {
 
-        await AsyncStorage.setItem('userToken', access_token); // salvando o token na memoria do dispositivo
+        await login(access_token) // salvando o token na memoria do dispositivo
         
         Alert.alert("Sucesso", message);
         
-        router.replace('/(tabs)/');
+        router.replace('/(tabs)/' as any);
 
       } else {
         
@@ -56,10 +56,10 @@ export default function LoginScreen() {
 
         <TextInput
           style={GlobalStyles.input}
-          placeholder="Nome de usuário"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
+          placeholder="CPF*"
+          value={cpf}
+          onChangeText={setCpf}
+          keyboardType="numeric"
         />
         <TextInput
           style={GlobalStyles.input}

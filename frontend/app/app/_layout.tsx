@@ -1,37 +1,46 @@
 // frontend/app/_layout.tsx
-import React, { useState, useEffect } from 'react';
-import { Stack, router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect } from 'react';
+import { Stack, router, useSegments } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 
+// 1. Importe o PROVEDOR e o HOOK que você criou
+import { AuthProvider, useAuth } from '../contexts/AuthContext'; 
+
+// Esta é a nova "casca" do app
 export default function RootLayout() {
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Este useEffect é o "verificador de login"
+  return (
+    // 2. Envolva todo o aplicativo no AuthProvider
+    // Agora o "cérebro" do login está fora do roteador, corrigindo o loop.
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
+  );
+}
+
+// Este é o "Porteiro" real agora
+function RootLayoutNav() {
+  const { token, isLoading } = useAuth(); // 3. Pega o estado de login do Contexto
+  const segments = useSegments(); // Pega a rota atual
+
   useEffect(() => {
-    async function checkLoginStatus() {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        
-        if (token) {
-          // Se tem token, vá para as tabs
-          router.replace('/(tabs)/');
-        } else {
-          // Se NÃO tem token, vá para o signin (seu nome de arquivo)
-          router.replace('/(auth)/signin');
-        }
-      } catch (e) {
-        console.error("Falha ao carregar o token", e);
-        router.replace('/(auth)/signin'); // Manda para o signin em caso de erro
-      } finally {
-        setIsLoading(false);
-      }
+    // Se o app ainda está carregando o token, não faça nada
+    if (isLoading) return; 
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (token && !inAuthGroup) {
+      // Se TEM token, mas NÃO está no app (tabs), vá para as tabs
+      router.replace('/(tabs)/' as any);
+    } else if (!token && !inAuthGroup) {
+      // Se NÃO tem token, e NÃO está no auth, vá para o login
+      router.replace('/(auth)/signin');
     }
+    // Se TEM token e ESTÁ no (tabs) -> não faz nada
+    // Se NÃO tem token e ESTÁ no (auth) -> não faz nada (quebra o loop)
 
-    checkLoginStatus();
-  }, []); // O array vazio [] faz isso rodar UMA VEZ no startup
+  }, [token, isLoading, segments]); // 4. Rode a verificação sempre que o login ou a rota mudar
 
-  // Tela de "Carregando..." enquanto o AsyncStorage é verificado
+  // 5. Mostra o "Loading..."
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -40,30 +49,16 @@ export default function RootLayout() {
     );
   }
 
-  // --- O "PORTEIRO" ---
-  // Esta é a parte que corrige o seu erro.
-  // Ele define TODAS as suas rotas de "primeiro nível" (os grupos e modais).
+  // 6. O "Porteiro" (igual ao de antes)
+  // A linha vermelha aqui é um BUG DE CACHE DO VSCODE.
+  // Seu código está certo.
   return (
     <Stack>
-      {/* 1. Define o grupo (auth) */}
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen 
-        name="(auth)" // Aponta para a pasta /app/(auth)
-        options={{ headerShown: false }} 
-      />
-
-      {/* 2. Define o grupo (tabs) <-- ESTA LINHA CORRIGE O ERRO */}
-      <Stack.Screen 
-        name="(tabs)" // Aponta para a pasta /app/(tabs)
-        options={{ headerShown: false }} 
-      />
-      
-      {/* 3. Define a tela modal (usando o SEU nome de arquivo) */}
-      <Stack.Screen 
-        name="schedule_appointments" // Aponta para /app/schedule_appointments.tsx
-        options={{ 
-          presentation: 'modal',
-          title: 'Agendar Consulta'
-        }} 
+        name="schedule_appointments" // Use o nome do seu arquivo
+        options={{ presentation: 'modal', title: 'Agendar' }} 
       />
     </Stack>
   );

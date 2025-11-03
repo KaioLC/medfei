@@ -26,7 +26,7 @@ migrate = Migrate(app, db) # inicializa o Flask-Migrate
 
 
 # configurando o JWT
-app.config["JWT_SECRET"] = "aquario-douradinho-medfei-2025-atualizada" # acess secret key
+app.config["JWT_SECRET_KEY"] = "aquario-douradinho-medfei-2025-atualizada" # acess secret key
 jwt = JWTManager(app) # gerenciador do JWT
 
 
@@ -167,23 +167,25 @@ def get_users():
 @app.route("/api/login", methods=['POST'])
 def login_user():
     data = request.json
-    username = data.get('username')
+    cpf_attempt = data.get('cpf')
     password_attempt = data.get('password')
 
     # validando os campos preenchidos
-    if not username or not password_attempt:
+    if not cpf_attempt or not password_attempt:
         return jsonify(message="Preencha todos os campos*"), 400
     
+    clean_cpf = "".join(filter(str.isdigit, cpf_attempt))
+
     # buscando o usuario no banco de dados
     user = db.session.execute(
-        db.select(User).filter_by(username=username)
+        db.select(User).filter_by(cpf=clean_cpf)
     ).scalar_one_or_none()
 
     # verificando se o usuario existe + senha correta
     if user and check_password_hash(user.password_hash, password_attempt):
 
-        acess_token = create_access_token(identity=user.id) # criando token de acesso JWT
-        return jsonify(acess_token, message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
+        access_token = create_access_token(identity=user.id) # criando token de acesso JWT
+        return jsonify(access_token=access_token, message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
     
     else:
         return jsonify(message="Usuário ou senha incorretos"), 401 # 401 é codigo de unauthorized
