@@ -67,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-// Cria um "Hook" para usarmos o contexto facilmente
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

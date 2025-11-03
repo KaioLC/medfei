@@ -1,62 +1,70 @@
-import { StyleSheet, Text, View, Button, TextInput, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+// frontend/app/(auth)/signin.tsx
+
+import { 
+  StyleSheet, Text, View, Button, TextInput, 
+  Alert, TouchableOpacity, ImageBackground // 1. Importe o ImageBackground
+} from 'react-native';
 import { useState } from 'react';
 import { Link, router } from 'expo-router';
-import api from '../../utils/api'; // api centralizada
-import { GlobalStyles } from '../../constants/theme';
+import api from '../../utils/api';
+import { GlobalStyles } from '../../constants/theme'; // Nossos estilos globais
 import { useAuth } from '../../contexts/AuthContext';
 
-export default function LoginScreen() {
+// 2. Defina o caminho para sua imagem de fundo
+const feiLogoBackground = require('../../assets/images/fei-logo.png'); 
 
+export default function LoginScreen() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth(); // pega a função de login do contexto
+  const { login } = useAuth();
+
   const handleLogin = async () => {
+
     if (!cpf || !password) {
-      Alert.alert("Erro", "Por favor, preencha o nome de usuário e a senha.");
+      Alert.alert("Erro", "Por favor, preencha CPF e senha.");
       return;
     }
-
     try {
-
-      const response = await api.post('/api/login', { cpf, password }); // fazendo login
-
-      const { access_token, message } = response.data; // coleta o token
-
+      const response = await api.post('/api/login', { cpf, password });
+      const { access_token, message } = response.data;
       if (access_token) {
-
-        await login(access_token) // salvando o token na memoria do dispositivo
+        await login(access_token);
         
-        Alert.alert("Sucesso", message);
-        
-        router.replace('/(tabs)/' as any);
-
+        Alert.alert(
+          "Sucesso", 
+          message,
+          [
+            { 
+              text: "OK", 
+              onPress: () => router.replace('/(tabs)/' as any)
+            }
+          ]
+        );
       } else {
-        
         Alert.alert("Erro", "Token de acesso não recebido.");
-
       }
-
     } catch (error: any) {
-
-        console.error("Erro ao logar:", error);
       if (error.response?.data?.message) {
         Alert.alert("Erro no Login", error.response.data.message);
       } else {
         Alert.alert("Erro", "Não foi possível fazer o login.");
-
       }
     }
   };
 
   return (
-    <SafeAreaView style={GlobalStyles.safeArea}>
-      <View style={[GlobalStyles.container, styles.pageContainer]}>
+ 
+    <ImageBackground 
+      source={feiLogoBackground} 
+      style={GlobalStyles.authBackground}
+    >
+      <View style={GlobalStyles.authCard}>
         
-        <Text style={GlobalStyles.title}>Fazer Login</Text>
+        <Text style={GlobalStyles.title}>Login</Text>
 
         <TextInput
           style={GlobalStyles.input}
-          placeholder="CPF*"
+          placeholder="CPF"
           value={cpf}
           onChangeText={setCpf}
           keyboardType="numeric"
@@ -66,8 +74,7 @@ export default function LoginScreen() {
           placeholder="Senha"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry // Esconde a senha
-          autoCapitalize="none"
+          secureTextEntry
         />
 
         <Button title="Entrar" onPress={handleLogin} />
@@ -82,13 +89,6 @@ export default function LoginScreen() {
         </View>
 
       </View>
-    </SafeAreaView>
+    </ImageBackground>
   );
 }
-
-// O StyleSheet local é mínimo, pois usamos o GlobalStyles
-const styles = StyleSheet.create({
-  pageContainer: {
-    justifyContent: 'center',
-  },
-});

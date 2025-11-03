@@ -1,13 +1,16 @@
+// frontend/app/(auth)/signup.tsx
 
 import { 
   StyleSheet, Text, View, Button, TextInput, 
-  Alert, SafeAreaView, TouchableOpacity 
+  Alert, TouchableOpacity, ImageBackground // 1. Importe o ImageBackground
 } from 'react-native';
 import { useState } from 'react';
 import { Link, router } from 'expo-router';
 import api from '../../utils/api';
+import { GlobalStyles } from '../../constants/theme'; // Nossos estilos globais
 
-import { GlobalStyles, Colors } from '../../constants/theme'; 
+// 2. Defina o caminho para sua imagem de fundo
+const feiLogoBackground = require('../../assets/images/fei-logo.png'); 
 
 export default function CadastroScreen() {
   const [username, setUsername] = useState('');
@@ -16,17 +19,12 @@ export default function CadastroScreen() {
   const [password, setPassword] = useState('');
 
   const handleRegister = () => {
+    // ... (sua função de cadastro continua exatamente a mesma)
     if (!username || !email || !password || !cpf) {
       Alert.alert("Erro", "Por favor, preencha todos os campos.");
       return;
     }
-
-    api.post('/api/register', { 
-        username, 
-        email, 
-        password,
-        cpf 
-    })
+    api.post('/api/register', { username, email, password, cpf })
       .then(response => {
         Alert.alert(
           "Sucesso", 
@@ -35,7 +33,6 @@ export default function CadastroScreen() {
         );
       })
       .catch(error => {
-        console.error("Erro ao registrar:", error);
         if (error.response?.data?.message) {
           Alert.alert("Erro no Cadastro", error.response.data.message);
         } else {
@@ -45,9 +42,13 @@ export default function CadastroScreen() {
   };
 
   return (
-
-    <SafeAreaView style={GlobalStyles.safeArea}>
-      <View style={[GlobalStyles.container, styles.pageContainer]}>
+    // 3. Use o ImageBackground como o container principal
+    <ImageBackground 
+      source={feiLogoBackground} 
+      style={GlobalStyles.authBackground}
+    >
+      {/* 4. Use o "Cartão" para envolver seu formulário */}
+      <View style={GlobalStyles.authCard}>
         
         <Text style={GlobalStyles.title}>Criar Conta</Text>
 
@@ -79,7 +80,6 @@ export default function CadastroScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          autoCapitalize="none"
         />
 
         <Button title="Criar Conta" onPress={handleRegister} />
@@ -92,13 +92,11 @@ export default function CadastroScreen() {
             </TouchableOpacity>
           </Link>
         </View>
+
       </View>
-    </SafeAreaView>
+    </ImageBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  pageContainer: {
-    justifyContent: 'center',
-  },
-});
+// 5. Esta tela também não precisa de estilos locais!
+// const styles = StyleSheet.create({});
