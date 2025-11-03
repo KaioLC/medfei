@@ -13,3 +13,5 @@ backend/__pycache__/
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
+
+.venv
