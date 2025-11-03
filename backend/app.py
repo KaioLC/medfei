@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash # crip
 from datetime import datetime, timezone
 from validate_docbr import CPF # validar CPF
 from email_validator import validate_email, EmailNotValidError # validar email
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
 
 # configurando o app
@@ -24,6 +25,11 @@ db = SQLAlchemy(app) # inicializa o SQLAlchemy
 migrate = Migrate(app, db) # inicializa o Flask-Migrate
 
 
+# configurando o JWT
+app.config["JWT_SECRET"] = "aquario-douradinho-medfei-2025-atualizada" # acess secret key
+jwt = JWTManager(app) # gerenciador do JWT
+
+
 # definindo a tabela user
 class User(db.Model):
 
@@ -34,6 +40,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
 
+    appointments = db.relationship('Appointment', backref='user', lazy=True)
 
     def to_dict(self):
         return {
@@ -80,7 +87,6 @@ class Appointment(db.Model):
             'appointment_date': self.appointment_date,
             'created_at': self.created_at
         }
-
 
 # rota pra adicionar um usuario
 @app.route("/api/register", methods=['POST'])
@@ -175,7 +181,10 @@ def login_user():
 
     # verificando se o usuario existe + senha correta
     if user and check_password_hash(user.password_hash, password_attempt):
-        return jsonify(message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
+
+        acess_token = create_access_token(identity=user.id) # criando token de acesso JWT
+        return jsonify(acess_token, message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
+    
     else:
         return jsonify(message="Usuário ou senha incorretos"), 401 # 401 é codigo de unauthorized
 
@@ -205,12 +214,25 @@ def add_appointment():
 
 # listando consultas
 @app.route("/api/appointments", methods=['GET'])
+@jwt_required() # rota protegida com token JWT
 def get_appointments():
 
-    appointments = db.session.execute(db.select(Appointment)).scalars()
-    appointments_list = [appointment.to_dict() for appointment in appointments]
+    try:
+        current_user_id = get_jwt_identity() # pega o id do usuario logado
 
-    return jsonify(appointments=appointments_list)
+    except Exception as e:
+        return jsonify(message="Token inválido ou expirado"), 422 # 422 codigo de unprocessable entity
+    
+    user = db.session.get(User, current_user_id) # buscando todo o usuario  no banco de dados
+
+    if not user:
+        return jsonify(message="Usuário não encontrado"), 404 # 404 codigo de not found
+    
+    user_appointments = user.appointments
+
+    appointment_list = [appointment.to_dict() for appointment in user_appointments]
+
+    return jsonify(appointments=appointment_list), 200
 
 # seeding medicos no banco de dados
 @app.cli.command("seed_db_doctors")
