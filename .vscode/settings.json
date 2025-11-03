@@ -1,4 +1,11 @@
 {
-    "sqltools.connections": [],
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "clinica",
+            "database": "${workspaceFolder:medfei}/backend/project.db"
+        }
+    ],
     "sqltools.useNodeRuntime": true
 }

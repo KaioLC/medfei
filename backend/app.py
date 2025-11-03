@@ -203,6 +203,14 @@ def add_appointment():
 
     return jsonify(message="Consulta agendada"), 201
 
+# listando consultas
+@app.route("/api/appointments", methods=['GET'])
+def get_appointments():
+
+    appointments = db.session.execute(db.select(Appointment)).scalars()
+    appointments_list = [appointment.to_dict() for appointment in appointments]
+
+    return jsonify(appointments=appointments_list)
 
 # seeding medicos no banco de dados
 @app.cli.command("seed_db_doctors")
