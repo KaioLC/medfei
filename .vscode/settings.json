@@ -3,8 +3,8 @@
         {
             "previewLimit": 50,
             "driver": "SQLite",
-            "database": "${workspaceFolder:medfei}/backend/project.db",
-            "name": "medfei"
+            "name": "clinica",
+            "database": "${workspaceFolder:medfei}/backend/project.db"
         }
     ],
     "sqltools.useNodeRuntime": true

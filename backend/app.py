@@ -1,8 +1,11 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
 from datetime import datetime, timezone
+from validate_docbr import CPF # validar CPF
+from email_validator import validate_email, EmailNotValidError # validar email
 import os
 
 # configurando o app
@@ -17,6 +20,9 @@ db_path = os.path.join(basedir, 'project.db')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}' # conectando com o banco de dados
 db = SQLAlchemy(app) # inicializa o SQLAlchemy
+
+migrate = Migrate(app, db) # inicializa o Flask-Migrate
+
 
 # definindo a tabela user
 class User(db.Model):
@@ -42,7 +48,8 @@ class Doctor(db.Model):
 
     __tablename__ = 'doctors'
     id = db.Column(db.Integer, primary_key=True)
-    crm = db.Column(db.Integer(20), unique=True, nullable=False)
+    crm = db.Column(db.Integer, unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     name = db.Column(db.String(120), nullable=False)
     specialty = db.Column(db.String(120), nullable=False)
 
@@ -50,7 +57,9 @@ class Doctor(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'specialty': self.specialty
+            'specialty': self.specialty,
+            'email': self.email,
+            'crm': self.crm
         }
     
 class Appointment(db.Model):
@@ -74,30 +83,65 @@ class Appointment(db.Model):
 
 
 # rota pra adicionar um usuario
-@app.route("/api/users", methods=['POST'])
-def add_user():
+@app.route("/api/register", methods=['POST'])
+def register_user():
 
     data = request.json # recebe o json do frontend e transforma em dict
     username = data.get('username')
     password = data.get('password')
+    cpf = data.get('cpf')
+    email = data.get('email')
     
     # verificando se o usuario ta preenchido
-    if not username or not password:
+    if not username or not password or not email or not cpf:
         return jsonify(message="Preencha todos os campos*"), 400 # 400 é codigo de bad request
     
 
+    # validando o email dado
+    try:
+        valid_email_data = validate_email(email, check_deliverability=False)
+        email = valid_email_data.normalized
+    
+    except EmailNotValidError as e: # email nao valido
+        return jsonify(message=f"Email inválido: {str(e)}"), 400
+
+
+    # validando o cpf dado
+    cpf_validator = CPF()
+    if not cpf_validator.validate(cpf):
+        return jsonify(message="CPF inválido"), 400
+    
+    clean_cpf = "".join(filter(str.isdigit, cpf))
+
     # verificando se o usuario já existe
-    existing_user = User.query.filter_by(username=username).scalar_one_or_none()
+    existing_user = db.session.execute(
+        db.select(User).filter_by(username=username)
+    ).scalar_one_or_none()
 
     if existing_user:
         return jsonify(message="Usuário já cadastrado"), 409 # 409 é codigo de conflito
     
+    existing_email = db.session.execute(
+        db.select(User).filter_by(email=email)
+    ).scalar_one_or_none()
+
+    if existing_email:
+        return jsonify(message="Email já cadastrado"), 409 # 409 é codigo de conflito
+    
+    existing_cpf = db.session.execute(
+        db.select(User).filter_by(cpf=clean_cpf)
+    ).scalar_one_or_none()
+
+    if existing_cpf:
+        return jsonify(message="CPF já cadastrado"), 409 # 409 é codigo de conflito
+
     hashed_password = generate_password_hash(password)
 
     new_user = User(
         username=username,
         email=data.get('email'),
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        cpf=clean_cpf
     )
 
     db.session.add(new_user)
@@ -144,23 +188,8 @@ def get_doctors():
 
     return jsonify(doctors=doctors_list)
 
-# rota pra adicionar um medico (implementar no hardcode)
-@app.route("/api/doctors", methods=['POST'])
-def add_doctor():
-
-    data = request.json
-    new_doctor = Doctor(
-        crm=data['crm'],
-        name=data['name'],
-        specialty=data['specialty']
-    )
-    db.session.add(new_doctor)
-    db.session.commit()
-
-    return jsonify(message="Médico cadastrado"), 201
-
 # rota pra adicionar uma consulta
-@app.route("/api/appointments", methods=['POST'])
+@app.route("/api/register_appointments", methods=['POST'])
 def add_appointment():
 
     data = request.json
@@ -174,11 +203,31 @@ def add_appointment():
 
     return jsonify(message="Consulta agendada"), 201
 
+# listando consultas
+@app.route("/api/appointments", methods=['GET'])
+def get_appointments():
 
-# rota de teste
-@app.route("/api/hello")
-def hello_word():
-    return jsonify(message="Flask!")
+    appointments = db.session.execute(db.select(Appointment)).scalars()
+    appointments_list = [appointment.to_dict() for appointment in appointments]
+
+    return jsonify(appointments=appointments_list)
+
+# seeding medicos no banco de dados
+@app.cli.command("seed_db_doctors")
+def seed_db_doctors():
+
+    print("Adicionando médicos ao banco de dados...")
+    
+    if db.session.execute(db.select(Doctor)).scalar_one_or_none() is None:
+        doc1 = Doctor(name="Dr. Ana Silva", email="ana.silva@medfei.com", crm="123456-SP", specialty="Cardiologia")
+        doc2 = Doctor(name="Dr. Bruno Costa", email="bruno.costa@medfei.com", crm="789012-SP", specialty="Dermatologia")
+        doc3 = Doctor(name="Dr. Carla Dias", email="carla.dias@medfei.com", crm="345678-RJ", specialty="Pediatria")
+
+        db.session.add_all([doc1, doc2, doc3])
+        db.session.commit()
+        print("Médicos adicionados com sucesso!")
+    else:
+        print("Já existem médicos no banco de dados.")
 
 
 
