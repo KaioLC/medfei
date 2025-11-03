@@ -6,10 +6,10 @@ import Constants from 'expo-constants'; // tira o hardcode do IP
 function getApiHostname() {
 
   // pega o hostUri das variaveis de ambiente do expo
-  const hostUri = Constants.expoConfig?.extra?.hostUri;
+  const hostUri = Constants.expoConfig?.hostUri;
   // separa o hostname da porta
   if(hostUri) {
-    return hostUri.split(':')[0];
+    return hostUri.replace('http://', '').replace('https://', '').split(':')[0];
   }
   // pega o linkingUri das variaveis de ambiente do expo
   const linkingUri = Constants.linkingUri;
