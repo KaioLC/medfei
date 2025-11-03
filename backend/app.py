@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash # crip
 from datetime import datetime, timezone
 from validate_docbr import CPF # validar CPF
 from email_validator import validate_email, EmailNotValidError # validar email
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity # criar token de acesso JWT
 import os
 
 # configurando o app
