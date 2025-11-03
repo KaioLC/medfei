@@ -1,25 +1,25 @@
 import axios from 'axios';
 import Constants from 'expo-constants'; // tira o hardcode do IP
+import { Platform } from 'react-native';
 
 // pegando o IP dinamicamente
 
 function getApiHostname() {
 
-  // pega o hostUri das variaveis de ambiente do expo
-  const hostUri = Constants.expoConfig?.hostUri;
-  // separa o hostname da porta
-  if(hostUri) {
-    return hostUri.replace('http://', '').replace('https://', '').split(':')[0];
+  // caso seja web 
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.hostname;
   }
-  // pega o linkingUri das variaveis de ambiente do expo
+
+  // se for mobile (qr code)
   const linkingUri = Constants.linkingUri;
   if(linkingUri) {
     // separa o hostname da porta
     return linkingUri.replace('exp://', '').split(':')[0];
   }
 
-  console.warn("Não foi possível detectar o IP do host, usando localhost");
-  return 'localhost';
+  console.warn("Não foi possível detectar o IP do host, usando 10.0.2.2");
+  return '10.0.2.2';
 }
 
 const hostname = getApiHostname();
