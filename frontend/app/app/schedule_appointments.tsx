@@ -1,57 +1,104 @@
 // frontend/app/schedule_appointments.tsx
 
-import { View, Text, StyleSheet, Button } from 'react-native';
-import { Stack, router } from 'expo-router'; // Importa o router para fechar
-import { GlobalStyles, Colors } from '../constants/theme'; // Importa estilos
+import { 
+  View, Text, StyleSheet, SafeAreaView,
+  TextInput, TouchableOpacity, ScrollView, Alert
+} from 'react-native';
+import { Stack, router } from 'expo-router';
+import { GlobalStyles, Colors } from '../constants/theme';
+import { Ionicons } from '@expo/vector-icons'; // Importa os ícones
+import { useState } from 'react';
 
-export default function ScheduleAppointmentScreen() {
+// Dados Falsos (Mock Data) para as especialidades
+const ESPECIALIDADES = [
+  'Clínico geral',
+  'Dermatologista',
+  'Hematologia',
+  'Oftalmologia',
+  'Psiquiatria',
+  'Cardiologia',
+];
 
-  // Esta é a aparência que o Expo Router espera para
-  // configurar o cabeçalho de um modal.
-  const isPresentedAsModal = router.canGoBack();
+export default function ScheduleAppointmentsScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtra as especialidades baseado na busca
+  const filteredSpecialties = ESPECIALIDADES.filter(spec => 
+    spec.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSpecialtyPress = (specialty: string) => {
+    // PRÓXIMO PASSO: Navegar para a tela de médicos,
+    // passando a especialidade como parâmetro.
+    Alert.alert(
+      "Especialidade Selecionada", 
+      `Em breve, você verá os médicos para: ${specialty}`
+    );
+    // Ex: router.push(`/doctors?specialty=${specialty}`);
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Configura o cabeçalho */}
-      <Stack.Screen 
-        options={{ 
-          title: 'Agendar',
-          // Mostra um botão "X" ou "Fechar" se for um modal
-          headerLeft: isPresentedAsModal ? () => (
-            <Button 
-              title="Fechar" 
-              onPress={() => router.back()} 
-              color={Colors.primary}
-            />
-          ) : undefined,
-        }} 
-      />
+    <SafeAreaView style={GlobalStyles.safeArea}>
+      <Stack.Screen options={{ headerShown: false }} />
       
-      <Text style={styles.title}>Tela de Agendamento</Text>
-      <Text style={styles.subtitle}>Em breve...</Text>
+      {/* --- Header Customizado --- */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={32} color={Colors.medfeiBlue} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Consultas</Text>
+        <View style={{width: 40}} /> {/* Espaçador para centralizar o título */}
+      </View>
 
-      {/* Botão de fechar para garantir (especialmente no Android) */}
-      {!isPresentedAsModal && (
-         <View style={{marginTop: 20}}>
-            <Button title="Voltar" onPress={() => router.back()} />
-         </View>
-      )}
-    </View>
+      {/* --- Card Principal Azul Claro --- */}
+      <View style={GlobalStyles.specialtyCardContainer}>
+        
+        {/* Barra de Busca */}
+        <View style={GlobalStyles.searchBarContainer}>
+          <Ionicons name="search" size={20} color={Colors.textSecondary} />
+          <TextInput
+            style={GlobalStyles.searchInput}
+            placeholder="Buscar Especialidade..."
+            placeholderTextColor={Colors.textSecondary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+
+        {/* Lista de Especialidades */}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {filteredSpecialties.map((specialty, index) => (
+            <TouchableOpacity 
+              key={index} 
+              style={GlobalStyles.specialtyButton}
+              onPress={() => handleSpecialtyPress(specialty)}
+            >
+              <Text style={GlobalStyles.specialtyButtonText}>{specialty}</Text>
+              <Ionicons name="chevron-forward" size={24} color={Colors.medfeiBlue} />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
+// Estilos locais apenas para o Header desta tela
 const styles = StyleSheet.create({
-  container: {
-    ...GlobalStyles.container,
-    flex: 1,
-    justifyContent: 'center', // Centraliza o conteúdo
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: Colors.screenBackground, // Fundo igual ao da tela
   },
-  title: {
-    ...GlobalStyles.title,
+  backButton: {
+    padding: 5,
   },
-  subtitle: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-  }
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.medfeiBlue,
+  },
 });

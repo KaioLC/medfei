@@ -40,8 +40,10 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen 
-        name="schedule_appointments"
-        options={{ presentation: 'modal', title: 'Agendar' }} 
+            name="schedule_appointments"
+            options={{ 
+              headerShown: false,
+            }} 
       />
     </Stack>
   );

@@ -11,7 +11,7 @@ export default function HomeScreen() {
 
   return (
     // 1. Usa o estilo de fundo cinza-azulado
-    <SafeAreaView style={GlobalStyles.homeScreenContainer}>
+    <SafeAreaView style={GlobalStyles.safeArea}>
       <ScrollView>
         
         {/* --- Header (simples por enquanto) --- */}

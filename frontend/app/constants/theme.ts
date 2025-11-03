@@ -26,42 +26,80 @@ export const Colors = {
  */
 export const GlobalStyles = StyleSheet.create({
 
+  // --- Estilos de Layout Base (Onde deu o erro) ---
+
+  /**
+   * Estilo de "tela cheia" segura. Garante que o conteúdo não
+   * fique embaixo de notches (iOS) ou barras de status (Android).
+   */
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.screenBackground, // Usa o fundo cinza-azulado por padrão
+  },
+
+  /**
+   * Estilo de container padrão com padding.
+   * CUIDADO: Este estilo NÃO centraliza. É só para espaçamento.
+   */
+  container: {
+    padding: 20,
+  },
+
+  // --- Estilos de Autenticação (Login / Cadastro) ---
+
+  /**
+   * Fundo com imagem (Logo da FEI) para telas de autenticação.
+   * Usado com o componente <ImageBackground>.
+   */
   authBackground: {
     flex: 1,
     resizeMode: 'cover', 
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.background, // Cor de fallback
   },
   
+  /**
+   * O "Cartão" semi-transparente para formulários de login/cadastro.
+   * Usado com o componente <View> dentro do authBackground.
+   */
   authCard: {
     width: '90%', 
     maxWidth: 400,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', // Branco com 85% de opacidade
     padding: 25,
-    borderRadius: 20,
+    borderRadius: 20, // Cantos arredondados
     alignItems: 'center',
     
-  
+    // Sombra (iOS)
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     
+    // Sombra (Android)
     elevation: 5,
   },
 
+  // --- Estilos Gerais de Formulário ---
+
+  /**
+   * Título principal (usado no Login, Cadastro e Home).
+   */
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
-    color: Colors.medfeiBlue,
+    color: Colors.medfeiBlue, // Usa a cor do tema
   },
 
+  /**
+   * Input de texto padrão para todos os formulários.
+   */
   input: {
     height: 44,
-    width: '100%',
+    width: '100%', // Ocupa a largura total do cartão onde está
     backgroundColor: Colors.surface,
     borderColor: Colors.border,
     borderWidth: 1,
@@ -80,11 +118,6 @@ export const GlobalStyles = StyleSheet.create({
   link: {
     color: Colors.primary,
     fontWeight: '600',
-  },
-
-  homeScreenContainer: {
-    flex: 1,
-    backgroundColor: Colors.screenBackground,
   },
 
   homeCard: {
@@ -121,16 +154,16 @@ export const GlobalStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-
+  
   homeFullButton: {
     backgroundColor: Colors.medfeiBlue,
-    width: '100%', // Ocupa a largura inteira
+    width: '100%', 
     paddingVertical: 15,
     borderRadius: 15,
     alignItems: 'center',
     marginTop: 10,
   },
-  
+
   homeSectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -167,4 +200,43 @@ export const GlobalStyles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  specialtyCardContainer: {
+    flex: 1,
+    margin: 15,
+    padding: 20,
+    borderRadius: 20,
+    backgroundColor: Colors.medfeiLightBlue,
+  },
+
+  searchBarContainer: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  
+  searchInput: {
+    flex: 1,
+    height: 44,
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  
+  specialtyButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  
+  specialtyButtonText: {
+    color: Colors.medfeiBlue,
+    fontSize: 18,
+    fontWeight: '600',
+  },
 });

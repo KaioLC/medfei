@@ -193,26 +193,47 @@ def login_user():
 # rota pra listar os medicos
 @app.route("/api/doctors", methods=['GET'])
 def get_doctors():
+    try:
+        doctors_from_db = db.session.execute(db.select(Doctor)).scalars()
+        doctors_list = [doctor.to_dict() for doctor in doctors_from_db]
 
-    doctors_from_db = db.session.execute(db.select(Doctor)).scalars()
-    doctors_list = [doctor.to_dict() for doctor in doctors_from_db]
-
-    return jsonify(doctors=doctors_list)
+        return jsonify(doctors=doctors_list)
+    except Exception as e:
+        return jsonify(message=f"Erro ao buscar médicos: {str(e)}"), 500
 
 # rota pra adicionar uma consulta
 @app.route("/api/register_appointments", methods=['POST'])
+@jwt_required() # rota protegida com token JWT
 def add_appointment():
 
+    current_user_id = get_jwt_identity()
+    
     data = request.json
-    new_appointment = Appointment(
-        user_id=data['user_id'],
-        doctor_id=data['doctor_id'],
-        appointment_date=data['appointment_date']
-    )
-    db.session.add(new_appointment)
-    db.session.commit()
+    doctor_id = data.get('doctor_id')
+    start_time_str = data.get('start_time')
+    description = data.get('description')
 
-    return jsonify(message="Consulta agendada"), 201
+    if not doctor_id or not start_time_str:
+        return jsonify(message="Médico e data/hora são obrigatórios."), 400
+
+    try:
+        start_time_obj = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+    except ValueError:
+        return jsonify(message="Formato de data inválido."), 400
+
+    new_appointment = Appointment(
+        start_time=start_time_obj,
+        description=description,
+        user_id=current_user_id,
+        doctor_id=doctor_id
+    )
+    try:
+        db.session.add(new_appointment)
+        db.session.commit()
+        return jsonify(message="Consulta agendada com sucesso!"), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(message=f"Erro ao salvar no banco: {str(e)}"), 500
 
 # listando consultas
 @app.route("/api/appointments", methods=['GET'])
