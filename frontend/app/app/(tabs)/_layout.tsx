@@ -1,33 +1,34 @@
-import { Tabs } from 'expo-router';
+// frontend/app/(tabs)/_layout.tsx
 import React from 'react';
+import { Tabs } from 'expo-router';
+// Você pode querer instalar o react-native-vector-icons para os ícones
+// npx expo install @expo/vector-icons
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+// (Vamos usar ícones de texto simples por enquanto)
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarActiveTintColor: '#007AFF', // Cor da aba ativa
+        headerShown: false, // Vamos esconder o header padrão
       }}>
+      
+      {/* --- Aba 1: Home --- */}
       <Tabs.Screen
-        name="index"
+        name="index" // Aponta para o arquivo app/(tabs)/index.tsx
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Home', // Texto na barra de abas
+          // tabBarIcon: ({ color }) => <Text style={{ color: color }}>🏠</Text>,
         }}
       />
+
+      {/* --- Aba 2: Consultas --- */}
       <Tabs.Screen
-        name="explore"
+        name="appointments" // Aponta para o arquivo app/(tabs)/consultas.tsx
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Consultas', // Texto na barra de abas
+          // tabBarIcon: ({ color }) => <Text style={{ color: color }}>🗓️</Text>,
         }}
       />
     </Tabs>
