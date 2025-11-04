@@ -22,13 +22,18 @@ export default function LoginScreen() {
     try {
       const response = await api.post('/api/login', { cpf, password });
 
-      const { access_token, username, message } = response.data;
+      const { access_token, user, message } = response.data;
 
-      if (access_token && username) {
-        await login(access_token, username);
-        
+      // console.log("a api enviou: ", JSON.stringify(response.data, null, 2)); //tirar depois por segurança
+   
+      if (access_token && user) {
+        console.log("Fazendo login com token:", access_token);
+        await login(access_token, user);
+        console.log("Login bem-sucedido, redirecionando...");
+        // router.replace('/(tabs)/' as any);
       } else {
         Alert.alert("Erro", "Token de acesso não recebido.");
+        console.log("Token de acesso nao recebido");
       }
     } catch (error: any) {
       if (error.response?.data?.message) {
