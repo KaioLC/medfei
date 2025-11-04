@@ -53,6 +53,16 @@ function RootLayoutNav() {
               headerShown: false,
             }} 
       />
+      <Stack.Screen 
+        name="doctors/[specialty]"
+        options={{ headerShown: false }} 
+      />
+      <Stack.Screen 
+        name="schedule_time/[doctor_id]"
+        options={{ 
+          headerShown: false,
+        }} 
+      />
     </Stack>
   );
 }

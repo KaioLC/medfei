@@ -199,16 +199,31 @@ def get_doctors():
         # verificado se o frontend enviou um filtro de especialidade
         specialty_filter = request.args.get('specialty')
 
+        # debugando recebimento do filtro
+        print(f"\n--- REQUISIÇÃO PARA /api/doctors ---")
+        print(f"--- FILTRO DE ESPECIALIDADE RECEBIDO: '{specialty_filter}' ---")
+
         # fazendo a query no banco de dados
         query = db.select(Doctor)
 
         # se o filtro existir, aplicando ele na query
         if specialty_filter:
+            print(specialty_filter)
+            print("--- FILTRO ENCONTRADO! APLICANDO FILTRO... ---")
+            
             query = query.filter_by(specialty=specialty_filter)
 
+            print(query)
+
+        else:
+            print("--- NENHUM FILTRO APLICADO ---")
+
         # executando a query
-        doctors_from_db = db.session.execute(db.select(Doctor)).scalars()
+        doctors_from_db = db.session.execute(query).scalars()
         doctors_list = [doctor.to_dict() for doctor in doctors_from_db]
+
+        print(f"--- MÉDICOS ENCONTRADOS: {doctors_list} ---\n")
+
 
         return jsonify(doctors=doctors_list)
     except Exception as e:

@@ -1,38 +1,45 @@
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView,TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { GlobalStyles, Colors } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-
-const ESPECIALIDADES = [
-  'Clínico geral',
-  'Dermatologista',
-  'Hematologia',
-  'Oftalmologia',
-  'Psiquiatria',
-  'Cardiologia',
-];
+import { useState, useEffect } from 'react';
+import api from '../utils/api';
 
 export default function ScheduleAppointmentsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  
 
-  // Filtra as especialidades baseado na busca
-  const filteredSpecialties = ESPECIALIDADES.filter(spec => 
+  const [specialties, setSpecialties] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+
+  useEffect(() => {
+    api.get('/api/specialties')
+      .then(response => {
+        setSpecialties(response.data.specialties);
+      })
+      .catch(error => {
+        console.error("Erro ao buscar especialidades:", error);
+        Alert.alert("Erro", "Não foi possível carregar as especialidades.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+
+  const filteredSpecialties = specialties.filter(spec => 
     spec.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSpecialtyPress = (specialty: string) => {
 
-    // passando a especialidade como parâmetro.
-    Alert.alert(
-      "Especialidade Selecionada", 
-      `Em breve, você verá os médicos para: ${specialty}`
-    );
-    // Ex: router.push(`/doctors?specialty=${specialty}`);
+  const handleSpecialtyPress = (specialty: string) => {
+    router.push(`/doctors/${specialty}` as any);
   };
 
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
+
       <Stack.Screen options={{ headerShown: false }} />
       
       <View style={styles.header}>
@@ -56,19 +63,22 @@ export default function ScheduleAppointmentsScreen() {
           />
         </View>
 
-        {/* Lista de Especialidades */}
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {filteredSpecialties.map((specialty, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={GlobalStyles.specialtyButton}
-              onPress={() => handleSpecialtyPress(specialty)}
-            >
-              <Text style={GlobalStyles.specialtyButtonText}>{specialty}</Text>
-              <Ionicons name="chevron-forward" size={24} color={Colors.medfeiBlue} />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {isLoading ? (
+                <ActivityIndicator size="large" color={Colors.medfeiBlue} style={{marginTop: 20}} />
+        ) : (
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {filteredSpecialties.map((specialty, index) => (
+              <TouchableOpacity 
+                key={index} 
+                style={GlobalStyles.specialtyButton}
+                onPress={() => handleSpecialtyPress(specialty)}
+              >
+                <Text style={GlobalStyles.specialtyButtonText}>{specialty}</Text>
+                <Ionicons name="chevron-forward" size={24} color={Colors.medfeiBlue} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );
