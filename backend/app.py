@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import distinct
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from validate_docbr import CPF # validar CPF
 from email_validator import validate_email, EmailNotValidError # validar email
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity # criar token de acesso JWT
@@ -28,7 +28,29 @@ migrate = Migrate(app, db) # inicializa o Flask-Migrate
 
 # configurando o JWT
 app.config["JWT_SECRET_KEY"] = "aquario-douradinho-medfei-2025-atualizada" # acess secret key
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=8) # token expira em 8 horas
+
 jwt = JWTManager(app) # gerenciador do JWT
+
+# callback de erros do jwt
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error_string):
+    """Callback para quando um token é inválido (mal formatado, assinatura errada, etc)"""
+    print(f" ERRO DE TOKEN INVALIDO: {error_string} ")
+    return jsonify(message=f"token é inválido: {error_string}"), 422
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    """Callback para quando um token já expirou"""
+    print(" ERRO DE TOKEN EXPIRADO:")
+    return jsonify(message="Seu token expirou. Por favor, faça login novamente."), 422
+
+@jwt.unauthorized_loader
+def unauthorized_callback(reason):
+    """Callback para quando o header 'Authorization' está faltando"""
+    print(f" ERRO DE AUTORIZACAO FALTANDO:  {reason} ---")
+    return jsonify(message="Requisição não autorizada. Token de acesso está faltando."), 401
 
 
 # definindo a tabela user
@@ -185,7 +207,7 @@ def login_user():
     # verificando se o usuario existe + senha correta
     if user and check_password_hash(user.password_hash, password_attempt):
 
-        access_token = create_access_token(identity=user.id) # criando token de acesso JWT
+        access_token = create_access_token(identity=str(user.id)) # criando token de acesso JWT
         return jsonify(access_token=access_token,user=user.to_dict(), message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
     
     else:
@@ -266,7 +288,7 @@ def add_appointment():
     existing_appointment = db.session.execute(
         db.select(Appointment).filter_by(
             doctor_id=doctor_id,
-            start_time=start_time_obj
+            appointment_date=start_time_obj
         )
     ).scalar_one_or_none()
 
@@ -274,7 +296,7 @@ def add_appointment():
         return jsonify(message="Horário já agendado para este médico."), 409
     
     new_appointment = Appointment(
-        start_time=start_time_obj,
+        appointment_date=start_time_obj,
         user_id=current_user_id,
         doctor_id=doctor_id
     )

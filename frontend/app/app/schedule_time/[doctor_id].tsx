@@ -2,69 +2,99 @@
 
 import { useState } from 'react';
 import { 
-  View, Text, StyleSheet, Button, TextInput, Alert, 
-  Platform, SafeAreaView, TouchableOpacity
+  View, Text, StyleSheet, Button, Alert, 
+  SafeAreaView, TouchableOpacity, ScrollView 
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { GlobalStyles, Colors } from '../../constants/theme';
 import api from '../../utils/api';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../contexts/AuthContext';
 
-// 1. Importe o Seletor de Data/Hora
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useAuth } from '../../contexts/AuthContext'; // Para o token
+// 1. Importe o Calendário
+import { Calendar, LocaleConfig } from 'react-native-calendars';
+
+// (Opcional: Traduz o calendário para Português)
+LocaleConfig.locales['pt-br'] = {
+  monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
+  monthNamesShort: ['Jan.','Fev.','Mar.','Abr.','Mai.','Jun.','Jul.','Ago.','Set.','Out.','Nov.','Dez.'],
+  dayNames: ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],
+  dayNamesShort: ['Dom.','Seg.','Ter.','Qua.','Qui.','Sex.','Sáb.'],
+  today: 'Hoje'
+};
+LocaleConfig.defaultLocale = 'pt-br';
+
+// --- (DADOS FALSOS PARA OS HORÁRIOS) ---
+// (No futuro, você fará uma API para buscar
+//  os horários disponíveis deste médico neste dia)
+const MOCK_TIMES = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+// ----------------------------------------
 
 export default function ScheduleTimeScreen() {
-  // 2. Pega o ID do médico da URL (ex: "5")
   const { doctor_id } = useLocalSearchParams<{ doctor_id: string }>();
-  const { token } = useAuth(); // Pega o token de login
+  const { token } = useAuth();
 
-  // Estados para o formulário
-  const [date, setDate] = useState(new Date()); // Começa com a data/hora atual
+  // Estados para o fluxo de Dia -> Horário
+  const [selectedDay, setSelectedDay] = useState<string>(''); // Salva '2025-11-20'
+  const [selectedTime, setSelectedTime] = useState<string>(''); // Salva '09:00'
+
+  // --- Lógica de Datas (para desabilitar dias) ---
+  const today = new Date();
+  const minDateStr = today.toISOString().split('T')[0];
   
-  // Controla a UI
-  // No iOS é melhor sempre mostrar, no Android usamos um botão
-  const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
+  const maxDate = new Date(today);
+  maxDate.setMonth(maxDate.getMonth() + 3); // 3 meses no futuro
+  const maxDateStr = maxDate.toISOString().split('T')[0];
+  // ----------------------------------------------
 
-  // 3. Função para lidar com a mudança de data
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    const currentDate = selectedDate || date;
-    // No Android, o seletor fecha sozinho. No iOS, ele fica aberto.
-    setShowDatePicker(Platform.OS === 'ios');
-    setDate(currentDate);
+  // 2. Função chamada quando um dia é clicado no calendário
+  const onDayPress = (day: { dateString: string }) => {
+    setSelectedDay(day.dateString);
+    setSelectedTime(''); // Reseta o horário ao trocar o dia
   };
 
-  // 4. Função para SALVAR a consulta (chama a API)
+  // 3. Função para salvar o agendamento
   const handleSaveAppointment = async () => {
-    // Verificação de segurança
+    // Validação
+    if (!selectedDay || !selectedTime) {
+      Alert.alert("Erro", "Por favor, selecione um dia e um horário.");
+      return;
+    }
     if (!token) {
       Alert.alert("Erro", "Você não está logado.", [{ text: "OK", onPress: () => router.replace('/(auth)/signin') }]);
       return;
     }
-    
-    try {
-      // 5. Envia os dados para a rota que criamos no backend
-      //    (O 'api' (axios) já está configurado com o token pelo AuthContext)
-      const response = await api.post('/api/register_appointments', {
-        doctor_id: Number(doctor_id), // Converte o ID da URL (string) para número
-        start_time: date.toISOString(), // Envia a data no formato padrão
-      });
 
-      // 6. Sucesso!
+    console.log("[FRONTEND] Enviando este token para a API:", token);
+    
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}` // usa o token do useAuth()
+      }
+    };
+
+    const [hour, minute] = selectedTime.split(':').map(Number);
+    const [year, month, day] = selectedDay.split('-').map(Number);
+
+    const finalDate = new Date(year, month - 1, day, hour, minute);
+
+    try {
+      const response = await api.post('/api/register_appointments', {
+        doctor_id: Number(doctor_id),
+        start_time: finalDate.toISOString(), // Envia a data no formato UTC
+      }, config
+    );
+
       Alert.alert(
         "Sucesso", 
-        response.data.message, // "Consulta agendada com sucesso!"
-        [
-          // 7. Manda o usuário de volta para a Home (pulando 3 telas)
-          { text: "OK", onPress: () => router.replace('/(tabs)/' as any) }
-        ]
+        response.data.message,
+        [{ text: "OK", onPress: () => router.replace('/(tabs)/' as any) }]
       );
 
     } catch (error: any) {
       console.error("Erro ao salvar consulta:", error);
-      // Mostra o erro do backend (ex: "Horário já agendado para este médico.")
       const msg = error.response?.data?.message || "Não foi possível salvar a consulta.";
-      Alert.alert("Erro", msg); 
+      Alert.alert("Erro", msg); // Mostra o erro do backend (ex: "Horário já agendado")
     }
   };
 
@@ -72,7 +102,7 @@ export default function ScheduleTimeScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* --- Header Customizado --- */}
+      {/* Header Customizado */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={32} color={Colors.medfeiBlue} />
@@ -81,41 +111,77 @@ export default function ScheduleTimeScreen() {
         <View style={{width: 40}} />
       </View>
 
-      <View style={GlobalStyles.specialtyCardContainer}>
-        
-        {/* --- Seletor de Data/Hora --- */}
-        <Text style={styles.label}>Escolha a Data e Hora:</Text>
-        
-        {/* Botão para abrir o seletor no Android */}
-        {Platform.OS === 'android' && (
-          <Button title="Escolher Data/Hora" onPress={() => setShowDatePicker(true)} />
-        )}
-        
-        {/* O Seletor (Visível no iOS, ou quando 'showDatePicker' é true no Android) */}
-        {showDatePicker && (
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode="datetime" // Permite escolher data E hora
-            is24Hour={true}
-            display="default" // "spinner" ou "calendar" também são opções
-            onChange={onDateChange}
-            minimumDate={new Date()} // Não deixa agendar no passado
+      {/* Usamos ScrollView para o caso da tela ser pequena */}
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={GlobalStyles.specialtyCardContainer}>
+          
+          {/* --- 5. O CALENDÁRIO --- */}
+          <Text style={styles.label}>1. Selecione o dia:</Text>
+          <Calendar
+            style={styles.calendar}
+            // Marca o dia selecionado com a cor azul
+            markedDates={{
+              [selectedDay]: { selected: true, selectedColor: Colors.medfeiBlue, disableTouchEvent: true }
+            }}
+            onDayPress={onDayPress}
+            
+            // Desabilita dias passados e futuros (como você pediu)
+            minDate={minDateStr}
+            maxDate={maxDateStr}
+            
+            theme={{
+              calendarBackground: 'transparent',
+              arrowColor: Colors.medfeiBlue,
+              todayTextColor: Colors.primary,
+              textSectionTitleColor: Colors.medfeiBlue,
+            }}
           />
-        )}
-        
-        {/* Mostra a data selecionada */}
-        <Text style={styles.dateText}>Selecionado: {date.toLocaleString()}</Text>
 
-        {/* --- Botão Salvar --- */}
-        <TouchableOpacity 
-          style={GlobalStyles.homeFullButton} // Reutiliza o estilo de botão azul
-          onPress={handleSaveAppointment}
-        >
-          <Text style={GlobalStyles.homeGridButtonText}>Confirmar Agendamento</Text>
-        </TouchableOpacity>
+          {/* --- 6. OS HORÁRIOS (SÓ APARECEM SE UM DIA ESTIVER SELECIONADO) --- */}
+          {selectedDay && (
+            <View>
+              <Text style={styles.label}>2. Selecione o horário:</Text>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={GlobalStyles.timeSlotContainer}
+              >
+                {MOCK_TIMES.map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      GlobalStyles.timeSlotButton,
+                      selectedTime === time && GlobalStyles.timeSlotButtonSelected
+                    ]}
+                    onPress={() => setSelectedTime(time)}
+                  >
+                    <Text style={[
+                      GlobalStyles.timeSlotText,
+                      selectedTime === time && GlobalStyles.timeSlotTextSelected
+                    ]}>
+                      {time}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
-      </View>
+          {/* --- 7. Botão Salvar --- */}
+          <TouchableOpacity 
+            style={[
+              GlobalStyles.homeFullButton,
+              // Desabilita o botão se o dia ou hora não estiverem selecionados
+              (!selectedDay || !selectedTime) && styles.buttonDisabled
+            ]}
+            onPress={handleSaveAppointment}
+            disabled={!selectedDay || !selectedTime}
+          >
+            <Text style={GlobalStyles.homeGridButtonText}>Confirmar Agendamento</Text>
+          </TouchableOpacity>
+
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -138,16 +204,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.medfeiBlue,
   },
+  scrollContainer: {
+    flexGrow: 1, // Permite que o ScrollView cresça
+  },
   label: {
-    ...GlobalStyles.homeSectionTitle, // Reutiliza o estilo de título
+    ...GlobalStyles.homeSectionTitle,
     textAlign: 'left',
     paddingLeft: 10,
+    marginTop: 10,
+    fontSize: 18,
   },
-  dateText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginVertical: 15,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+  calendar: {
+    borderRadius: 10,
+    marginBottom: 10,
   },
+  buttonDisabled: {
+    backgroundColor: Colors.textSecondary, // Cor de botão desabilitado
+  }
 });
