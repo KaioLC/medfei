@@ -1,15 +1,9 @@
-// frontend/app/schedule_appointments.tsx
-
-import { 
-  View, Text, StyleSheet, SafeAreaView,
-  TextInput, TouchableOpacity, ScrollView, Alert
-} from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { GlobalStyles, Colors } from '../constants/theme';
-import { Ionicons } from '@expo/vector-icons'; // Importa os ícones
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 
-// Dados Falsos (Mock Data) para as especialidades
 const ESPECIALIDADES = [
   'Clínico geral',
   'Dermatologista',
@@ -28,7 +22,7 @@ export default function ScheduleAppointmentsScreen() {
   );
 
   const handleSpecialtyPress = (specialty: string) => {
-    // PRÓXIMO PASSO: Navegar para a tela de médicos,
+
     // passando a especialidade como parâmetro.
     Alert.alert(
       "Especialidade Selecionada", 
