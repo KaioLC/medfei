@@ -1,15 +1,9 @@
-// frontend/app/(auth)/signup.tsx
-
-import { 
-  StyleSheet, Text, View, Button, TextInput, 
-  Alert, TouchableOpacity, ImageBackground // 1. Importe o ImageBackground
-} from 'react-native';
+import { StyleSheet, Text, View, Button, TextInput, Alert, TouchableOpacity, ImageBackground } from 'react-native';
 import { useState } from 'react';
 import { Link, router } from 'expo-router';
 import api from '../../utils/api';
 import { GlobalStyles } from '../../constants/theme'; // Nossos estilos globais
 
-// 2. Defina o caminho para sua imagem de fundo
 const feiLogoBackground = require('../../assets/images/fei-logo.png'); 
 
 export default function CadastroScreen() {
@@ -19,7 +13,7 @@ export default function CadastroScreen() {
   const [password, setPassword] = useState('');
 
   const handleRegister = () => {
-    // ... (sua função de cadastro continua exatamente a mesma)
+
     if (!username || !email || !password || !cpf) {
       Alert.alert("Erro", "Por favor, preencha todos os campos.");
       return;
@@ -42,12 +36,12 @@ export default function CadastroScreen() {
   };
 
   return (
-    // 3. Use o ImageBackground como o container principal
+
     <ImageBackground 
       source={feiLogoBackground} 
       style={GlobalStyles.authBackground}
     >
-      {/* 4. Use o "Cartão" para envolver seu formulário */}
+
       <View style={GlobalStyles.authCard}>
         
         <Text style={GlobalStyles.title}>Criar Conta</Text>
@@ -97,6 +91,3 @@ export default function CadastroScreen() {
     </ImageBackground>
   );
 }
-
-// 5. Esta tela também não precisa de estilos locais!
-// const styles = StyleSheet.create({});

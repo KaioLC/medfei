@@ -80,25 +80,23 @@ export default function HomeScreen() {
 
       <Stack.Screen 
         options={{
-          headerShown: true, // Garante que o header seja visível
+          headerShown: true,
           headerStyle: { backgroundColor: Colors.screenBackground },
-          headerShadowVisible: false, // Tira a sombra
-          headerTitleAlign: 'center', // Centraliza o título
+          headerShadowVisible: false,
+          headerTitleAlign: 'center',
           
-          // O "Bem-vindo" agora é o Título
           headerTitle: () => (
             <Text style={styles.headerTitle}>
               Bem-vindo, {username || ''}!
             </Text>
           ),
           
-          // O Botão de Logout na direita
           headerRight: () => (
             <TouchableOpacity onPress={logout} style={{ marginRight: 15 }}>
               <Ionicons name="log-out-outline" size={28} color={Colors.error} />
             </TouchableOpacity>
           ),
-          headerLeft: () => null, // Remove o botão "Voltar" (se houver)
+          headerLeft: () => null,
         }}
       />    
         <View style={GlobalStyles.homeCard}>

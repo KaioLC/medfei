@@ -1,9 +1,8 @@
-// frontend/app/_layout.tsx
 import React, { useState, useEffect } from 'react';
 import { Stack, router, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, ActivityIndicator } from 'react-native';
-import { AuthProvider, useAuth } from '../contexts/AuthContext'; // Importe os dois
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 
 export default function RootLayout() {
   return (

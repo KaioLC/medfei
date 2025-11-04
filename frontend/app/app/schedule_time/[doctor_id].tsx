@@ -1,20 +1,13 @@
-// frontend/app/schedule_time/[doctor_id].tsx
-
-import { useState } from 'react';
-import { 
-  View, Text, StyleSheet, Button, Alert, 
-  SafeAreaView, TouchableOpacity, ScrollView 
-} from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Button, Alert, Platform, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { GlobalStyles, Colors } from '../../constants/theme';
 import api from '../../utils/api';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-
-// 1. Importe o Calendário
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 
-// (Opcional: Traduz o calendário para Português)
+
 LocaleConfig.locales['pt-br'] = {
   monthNames: ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'],
   monthNamesShort: ['Jan.','Fev.','Mar.','Abr.','Mai.','Jun.','Jul.','Ago.','Set.','Out.','Nov.','Dez.'],
@@ -24,38 +17,37 @@ LocaleConfig.locales['pt-br'] = {
 };
 LocaleConfig.defaultLocale = 'pt-br';
 
-// --- (DADOS FALSOS PARA OS HORÁRIOS) ---
-// (No futuro, você fará uma API para buscar
-//  os horários disponíveis deste médico neste dia)
+
 const MOCK_TIMES = ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
-// ----------------------------------------
+
 
 export default function ScheduleTimeScreen() {
   const { doctor_id } = useLocalSearchParams<{ doctor_id: string }>();
   const { token } = useAuth();
 
-  // Estados para o fluxo de Dia -> Horário
-  const [selectedDay, setSelectedDay] = useState<string>(''); // Salva '2025-11-20'
-  const [selectedTime, setSelectedTime] = useState<string>(''); // Salva '09:00'
 
-  // --- Lógica de Datas (para desabilitar dias) ---
+  const [selectedDay, setSelectedDay] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>('');
+
+  // estados pra controlar a UI
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
   const today = new Date();
   const minDateStr = today.toISOString().split('T')[0];
   
   const maxDate = new Date(today);
-  maxDate.setMonth(maxDate.getMonth() + 3); // 3 meses no futuro
+  maxDate.setMonth(maxDate.getMonth() + 3);
   const maxDateStr = maxDate.toISOString().split('T')[0];
-  // ----------------------------------------------
 
-  // 2. Função chamada quando um dia é clicado no calendário
   const onDayPress = (day: { dateString: string }) => {
     setSelectedDay(day.dateString);
-    setSelectedTime(''); // Reseta o horário ao trocar o dia
+    setSelectedTime(''); // reseta o horário ao trocar o dia
   };
 
-  // 3. Função para salvar o agendamento
+
   const handleSaveAppointment = async () => {
-    // Validação
+
     if (!selectedDay || !selectedTime) {
       Alert.alert("Erro", "Por favor, selecione um dia e um horário.");
       return;
@@ -65,6 +57,7 @@ export default function ScheduleTimeScreen() {
       return;
     }
 
+
     console.log("[FRONTEND] Enviando este token para a API:", token);
     
     const config = {
@@ -72,6 +65,9 @@ export default function ScheduleTimeScreen() {
         Authorization: `Bearer ${token}` // usa o token do useAuth()
       }
     };
+
+    setIsSubmitting(true); // exibe o loading no botao
+
 
     const [hour, minute] = selectedTime.split(':').map(Number);
     const [year, month, day] = selectedDay.split('-').map(Number);
@@ -81,7 +77,7 @@ export default function ScheduleTimeScreen() {
     try {
       const response = await api.post('/api/register_appointments', {
         doctor_id: Number(doctor_id),
-        start_time: finalDate.toISOString(), // Envia a data no formato UTC
+        start_time: finalDate.toISOString(), // envia a data no formato UTC
       }, config
     );
 
@@ -91,18 +87,46 @@ export default function ScheduleTimeScreen() {
         [{ text: "OK", onPress: () => router.replace('/(tabs)/' as any) }]
       );
 
+      setIsSuccess(true);
+
     } catch (error: any) {
       console.error("Erro ao salvar consulta:", error);
       const msg = error.response?.data?.message || "Não foi possível salvar a consulta.";
-      Alert.alert("Erro", msg); // Mostra o erro do backend (ex: "Horário já agendado")
+      Alert.alert("Erro", msg); // mostra o erro do backend
+    } finally {
+        setIsSubmitting(false); // esconde o loading no botao
     }
   };
+
+  useEffect(() => {
+    if (isSuccess) {
+      
+      const timer = setTimeout(() => {
+        
+        router.replace('/(tabs)/' as any);
+        
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess]); 
+
+  
+  if (isSuccess) {
+    return (
+      <SafeAreaView style={[GlobalStyles.safeArea, styles.successContainer]}>
+        <Ionicons name="checkmark-circle" size={80} color={Colors.medfeiBlue} />
+        <Text style={styles.successTitle}>Consulta Agendada!</Text>
+        <Text style={styles.successSubtitle}>Redirecionando para a Home...</Text>
+      </SafeAreaView>
+    );
+  }
+
 
   return (
     <SafeAreaView style={GlobalStyles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* Header Customizado */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={32} color={Colors.medfeiBlue} />
@@ -111,21 +135,18 @@ export default function ScheduleTimeScreen() {
         <View style={{width: 40}} />
       </View>
 
-      {/* Usamos ScrollView para o caso da tela ser pequena */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={GlobalStyles.specialtyCardContainer}>
           
-          {/* --- 5. O CALENDÁRIO --- */}
           <Text style={styles.label}>1. Selecione o dia:</Text>
           <Calendar
             style={styles.calendar}
-            // Marca o dia selecionado com a cor azul
+
             markedDates={{
               [selectedDay]: { selected: true, selectedColor: Colors.medfeiBlue, disableTouchEvent: true }
             }}
             onDayPress={onDayPress}
             
-            // Desabilita dias passados e futuros (como você pediu)
             minDate={minDateStr}
             maxDate={maxDateStr}
             
@@ -137,7 +158,6 @@ export default function ScheduleTimeScreen() {
             }}
           />
 
-          {/* --- 6. OS HORÁRIOS (SÓ APARECEM SE UM DIA ESTIVER SELECIONADO) --- */}
           {selectedDay && (
             <View>
               <Text style={styles.label}>2. Selecione o horário:</Text>
@@ -167,11 +187,10 @@ export default function ScheduleTimeScreen() {
             </View>
           )}
 
-          {/* --- 7. Botão Salvar --- */}
           <TouchableOpacity 
             style={[
               GlobalStyles.homeFullButton,
-              // Desabilita o botão se o dia ou hora não estiverem selecionados
+
               (!selectedDay || !selectedTime) && styles.buttonDisabled
             ]}
             onPress={handleSaveAppointment}
@@ -186,7 +205,6 @@ export default function ScheduleTimeScreen() {
   );
 }
 
-// --- (Estilos locais) ---
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -204,8 +222,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.medfeiBlue,
   },
-  scrollContainer: {
-    flexGrow: 1, // Permite que o ScrollView cresça
+  scrollContainer: { 
+    flexGrow: 1, 
+    paddingBottom: 40,
   },
   label: {
     ...GlobalStyles.homeSectionTitle,
@@ -219,6 +238,23 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonDisabled: {
-    backgroundColor: Colors.textSecondary, // Cor de botão desabilitado
+    backgroundColor: Colors.textSecondary,
+  },
+
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.screenBackground,
+  },
+  successTitle: {
+    ...GlobalStyles.title,
+    fontSize: 24,
+    color: Colors.medfeiBlue,
+    marginTop: 15,
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
   }
 });

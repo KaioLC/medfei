@@ -13,18 +13,17 @@ type Doctor = {
 };
 
 export default function DoctorsBySpecialtyScreen() {
-  // 1. Pega o parâmetro 'specialty' da URL (ex: "Dermatologista")
-  const { specialty } = useLocalSearchParams<{ specialty: string }>();
+
+    const { specialty } = useLocalSearchParams<{ specialty: string }>();
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 2. Busca os médicos filtrados da sua API (GET /api/doctors?specialty=...)
   useEffect(() => {
-    if (specialty) { // Garante que a especialidade não seja indefinida
+    if (specialty) { 
       setIsLoading(true);
       api.get(`/api/doctors`, { 
-          params: { specialty: specialty } // Envia a especialidade como um query param
+          params: { specialty: specialty }
       })
         .then(response => {
 
@@ -43,12 +42,10 @@ export default function DoctorsBySpecialtyScreen() {
           setIsLoading(false);
         });
     }
-  }, [specialty]); // Rode esta busca toda vez que o parâmetro 'specialty' mudar
+  }, [specialty]);
 
-  // 3. Lógica para quando o médico for selecionado
   const handleDoctorPress = (doctor: Doctor) => {
-    // Navega para a tela final (a que você chamou de [doctor_id])
-    // passando o ID do médico na URL
+
     router.push(`/schedule_time/${doctor.id}` as any);
   };
 
@@ -56,17 +53,15 @@ export default function DoctorsBySpecialtyScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* --- Header Customizado (com botão "Voltar") --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={32} color={Colors.medfeiBlue} />
         </TouchableOpacity>
-        {/* Mostra o nome da especialidade no título */}
+
         <Text style={styles.headerTitle}>{specialty || 'Médicos'}</Text>
         <View style={{width: 40}} /> {/* Espaçador */}
       </View>
 
-      {/* --- Card Principal Azul Claro --- */}
       <View style={GlobalStyles.specialtyCardContainer}>
         {isLoading ? (
           <ActivityIndicator size="large" color={Colors.medfeiBlue} style={{marginTop: 20}} />
