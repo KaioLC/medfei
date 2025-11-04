@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import distinct
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash # criptografar as senhas
 from datetime import datetime, timezone
@@ -194,12 +195,38 @@ def login_user():
 @app.route("/api/doctors", methods=['GET'])
 def get_doctors():
     try:
+
+        # verificado se o frontend enviou um filtro de especialidade
+        specialty_filter = request.args.get('specialty')
+
+        # fazendo a query no banco de dados
+        query = db.select(Doctor)
+
+        # se o filtro existir, aplicando ele na query
+        if specialty_filter:
+            query = query.filter_by(specialty=specialty_filter)
+
+        # executando a query
         doctors_from_db = db.session.execute(db.select(Doctor)).scalars()
         doctors_list = [doctor.to_dict() for doctor in doctors_from_db]
 
         return jsonify(doctors=doctors_list)
     except Exception as e:
         return jsonify(message=f"Erro ao buscar médicos: {str(e)}"), 500
+
+# rota pra listar todas especialidades *unicas*
+@app.route("/api/specialties", methods=['GET'])
+def get_specialties():
+    try:
+        specialties_from_db = db.session.execute(
+            db.select(distinct(Doctor.specialty))
+            ).all()
+        
+        specialties_list = [specialty[0] for specialty in specialties_from_db]
+
+        return jsonify(specialties=specialties_list)
+    except Exception as e:
+        return jsonify(message=f"Erro ao buscar especialidades: {str(e)}"), 500
 
 # rota pra adicionar uma consulta
 @app.route("/api/register_appointments", methods=['POST'])
@@ -211,7 +238,6 @@ def add_appointment():
     data = request.json
     doctor_id = data.get('doctor_id')
     start_time_str = data.get('start_time')
-    description = data.get('description')
 
     if not doctor_id or not start_time_str:
         return jsonify(message="Médico e data/hora são obrigatórios."), 400
@@ -221,9 +247,19 @@ def add_appointment():
     except ValueError:
         return jsonify(message="Formato de data inválido."), 400
 
+
+    existing_appointment = db.session.execute(
+        db.select(Appointment).filter_by(
+            doctor_id=doctor_id,
+            start_time=start_time_obj
+        )
+    ).scalar_one_or_none()
+
+    if existing_appointment:
+        return jsonify(message="Horário já agendado para este médico."), 409
+    
     new_appointment = Appointment(
         start_time=start_time_obj,
-        description=description,
         user_id=current_user_id,
         doctor_id=doctor_id
     )
