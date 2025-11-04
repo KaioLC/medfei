@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View, Button, TextInput, Alert, TouchableOpacity, ImageBackground } from 'react-native';
-import { useState } from 'react';
+import { StyleSheet, Text, View, Button, TextInput, Alert, TouchableOpacity, ImageBackground, SafeAreaView, ActivityIndicator } from 'react-native';
+import { useState, useEffect } from 'react';
 import { Link, router } from 'expo-router';
 import api from '../../utils/api';
-import { GlobalStyles } from '../../constants/theme'; // Nossos estilos globais
+import { GlobalStyles, Colors } from '../../constants/theme'; // estilos globais
+import { Ionicons } from '@expo/vector-icons';
 
 const feiLogoBackground = require('../../assets/images/fei-logo.png'); 
 
@@ -12,28 +13,64 @@ export default function CadastroScreen() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isSuccess) {
+      
+      const timer = setTimeout(() => {
+        
+        router.replace('/(auth)/signin');
+        
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSuccess]);
+
   const handleRegister = () => {
+    
+    setError(null);
+    setIsLoading(true);
 
     if (!username || !email || !password || !cpf) {
-      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      setError("Por favor, preencha todos os campos.");
+      setIsLoading(false);
       return;
     }
-    api.post('/api/register', { username, email, password, cpf })
+
+    api.post('/api/register', { 
+      username, 
+      email, 
+      password, 
+      cpf 
+    })
       .then(response => {
-        Alert.alert(
-          "Sucesso", 
-          response.data.message,
-          [{ text: "OK", onPress: () => router.replace('/signin') }] 
-        );
+        setIsSuccess(true);
       })
       .catch(error => {
         if (error.response?.data?.message) {
-          Alert.alert("Erro no Cadastro", error.response.data.message);
+          setError(error.response.data.message);
         } else {
-          Alert.alert("Erro", "Não foi possível registrar.");
+          setError("Não foi possível registrar.");
         }
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
+
+  if (isSuccess) {
+    return (
+      <SafeAreaView style={[GlobalStyles.safeArea, styles.successContainer]}>
+        <Ionicons name="checkmark-circle" size={80} color={Colors.medfeiBlue} />
+        <Text style={styles.successTitle}>Cadastro Concluído!</Text>
+        <Text style={styles.successSubtitle}>Redirecionando para o login...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
 
@@ -52,6 +89,7 @@ export default function CadastroScreen() {
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
+          editable={!isLoading}
         />
         <TextInput
           style={GlobalStyles.input}
@@ -60,6 +98,7 @@ export default function CadastroScreen() {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          editable={!isLoading}
         />
         <TextInput
           style={GlobalStyles.input}
@@ -67,6 +106,7 @@ export default function CadastroScreen() {
           value={cpf}
           onChangeText={setCpf}
           keyboardType="numeric"
+          editable={!isLoading}
         />
         <TextInput
           style={GlobalStyles.input}
@@ -74,9 +114,27 @@ export default function CadastroScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          editable={!isLoading}
         />
 
-        <Button title="Criar Conta" onPress={handleRegister} />
+        {error && (
+          <Text style={styles.errorText}>{error}</Text>
+        )}
+
+        <TouchableOpacity 
+          style={[
+            GlobalStyles.homeFullButton,
+            isLoading && styles.buttonDisabled
+          ]}
+          onPress={handleRegister}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={Colors.surface} />
+          ) : (
+            <Text style={GlobalStyles.homeGridButtonText}>Criar Conta</Text>
+          )}
+        </TouchableOpacity>
 
         <View style={GlobalStyles.linkContainer}>
           <Text>Já tem uma conta? </Text>
@@ -91,3 +149,35 @@ export default function CadastroScreen() {
     </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+
+  errorText: {
+    color: Colors.error,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 10,
+    fontWeight: '500',
+  },
+
+  buttonDisabled: {
+    backgroundColor: Colors.textSecondary,
+  },
+
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.screenBackground,
+  },
+  successTitle: {
+    ...GlobalStyles.title,
+    fontSize: 24,
+    color: Colors.medfeiBlue,
+    marginTop: 15,
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+  }
+});
