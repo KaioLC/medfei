@@ -41,19 +41,16 @@ export default function ScheduleAppointmentsScreen() {
     <SafeAreaView style={GlobalStyles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* --- Header Customizado --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={32} color={Colors.medfeiBlue} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Consultas</Text>
-        <View style={{width: 40}} /> {/* Espaçador para centralizar o título */}
+        <View style={{width: 40}} />
       </View>
 
-      {/* --- Card Principal Azul Claro --- */}
       <View style={GlobalStyles.specialtyCardContainer}>
         
-        {/* Barra de Busca */}
         <View style={GlobalStyles.searchBarContainer}>
           <Ionicons name="search" size={20} color={Colors.textSecondary} />
           <TextInput
@@ -83,7 +80,6 @@ export default function ScheduleAppointmentsScreen() {
   );
 }
 
-// Estilos locais apenas para o Header desta tela
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
@@ -91,7 +87,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    backgroundColor: Colors.screenBackground, // Fundo igual ao da tela
+    backgroundColor: Colors.screenBackground,
   },
   backButton: {
     padding: 5,
