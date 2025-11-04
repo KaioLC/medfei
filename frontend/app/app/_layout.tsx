@@ -1,6 +1,6 @@
 // frontend/app/_layout.tsx
 import React, { useState, useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useSegments } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../contexts/AuthContext'; // Importe os dois
@@ -14,20 +14,28 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+
   const { token, isLoading } = useAuth();
+  const segments = useSegments();
 
   useEffect(() => {
+
     if (isLoading) {
       return; 
     }
 
-    if (token) {
+    const inAuthgroup = segments[0] === '(auth)';
+
+    if (token && inAuthgroup) {
       router.replace('/(tabs)/' as any);
-    } else {
+    } 
+    else if (!token && !inAuthgroup) {
       router.replace('/(auth)/signin');
     }
-  }, [isLoading, token]);
+  }, [token, isLoading, segments]);
+
   if (isLoading) {
+
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />

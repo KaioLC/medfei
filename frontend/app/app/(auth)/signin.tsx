@@ -1,16 +1,10 @@
-// frontend/app/(auth)/signin.tsx
-
-import { 
-  StyleSheet, Text, View, Button, TextInput, 
-  Alert, TouchableOpacity, ImageBackground // 1. Importe o ImageBackground
-} from 'react-native';
+import { StyleSheet, Text, View, Button, TextInput, Alert, TouchableOpacity, ImageBackground } from 'react-native';
 import { useState } from 'react';
 import { Link, router } from 'expo-router';
 import api from '../../utils/api';
-import { GlobalStyles } from '../../constants/theme'; // Nossos estilos globais
+import { GlobalStyles } from '../../constants/theme';
 import { useAuth } from '../../contexts/AuthContext';
 
-// 2. Defina o caminho para sua imagem de fundo
 const feiLogoBackground = require('../../assets/images/fei-logo.png'); 
 
 export default function LoginScreen() {
@@ -24,24 +18,22 @@ export default function LoginScreen() {
       Alert.alert("Erro", "Por favor, preencha CPF e senha.");
       return;
     }
+
     try {
       const response = await api.post('/api/login', { cpf, password });
-      const { access_token, message } = response.data;
-      if (access_token) {
-        await login(access_token);
-        
-        Alert.alert(
-          "Sucesso", 
-          message,
-          [
-            { 
-              text: "OK", 
-              onPress: () => router.replace('/(tabs)/' as any)
-            }
-          ]
-        );
+
+      const { access_token, user, message } = response.data;
+
+      // console.log("a api enviou: ", JSON.stringify(response.data, null, 2)); //tirar depois por segurança
+   
+      if (access_token && user) {
+        console.log("Fazendo login com token:", access_token);
+        await login(access_token, user);
+        console.log("Login bem-sucedido, redirecionando...");
+        // router.replace('/(tabs)/' as any);
       } else {
         Alert.alert("Erro", "Token de acesso não recebido.");
+        console.log("Token de acesso nao recebido");
       }
     } catch (error: any) {
       if (error.response?.data?.message) {

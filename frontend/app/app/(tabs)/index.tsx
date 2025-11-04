@@ -1,23 +1,19 @@
-import { 
-  View, Text, StyleSheet, ScrollView, 
-  TouchableOpacity, SafeAreaView, Alert, Button // Adicione Button
-} from 'react-native';
-import { GlobalStyles, Colors } from '../../constants/theme'; // Importa nossos estilos
-import { router } from 'expo-router'; // Importa o router para navegar
-import { useAuth } from '../../contexts/AuthContext'; // Para o botão de Logout
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert, Button } from 'react-native';
+import { GlobalStyles, Colors } from '../../constants/theme';
+import { router } from 'expo-router';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function HomeScreen() {
-  const { logout } = useAuth(); // Pega a função de logout do contexto
+
+  const { logout, username } = useAuth();
 
   return (
-    // 1. Usa o estilo de fundo cinza-azulado
+  
     <SafeAreaView style={GlobalStyles.safeArea}>
       <ScrollView>
-        
-        {/* --- Header (simples por enquanto) --- */}
+  
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Bem-vindo!</Text>
-          {/* Aqui você pode adicionar os ícones de perfil/sino depois */}
+          <Text style={styles.headerTitle}>Bem-vindo, {username || 'usuario'}!</Text>
         </View>
 
         <View style={GlobalStyles.homeCard}>

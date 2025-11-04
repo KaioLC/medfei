@@ -1,34 +1,25 @@
-// frontend/app/(tabs)/_layout.tsx
 import React from 'react';
 import { Tabs } from 'expo-router';
-// Você pode querer instalar o react-native-vector-icons para os ícones
-// npx expo install @expo/vector-icons
-
-// (Vamos usar ícones de texto simples por enquanto)
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF', // Cor da aba ativa
-        headerShown: false, // Vamos esconder o header padrão
+        tabBarActiveTintColor: '#007AFF',
+        headerShown: false,
       }}>
       
-      {/* --- Aba 1: Home --- */}
       <Tabs.Screen
-        name="index" // Aponta para o arquivo app/(tabs)/index.tsx
+        name="index" 
         options={{
-          title: 'Home', // Texto na barra de abas
-          // tabBarIcon: ({ color }) => <Text style={{ color: color }}>🏠</Text>,
+          title: 'Home',
         }}
       />
 
-      {/* --- Aba 2: Consultas --- */}
       <Tabs.Screen
-        name="appointments" // Aponta para o arquivo app/(tabs)/consultas.tsx
+        name="appointments"
         options={{
-          title: 'Consultas', // Texto na barra de abas
-          // tabBarIcon: ({ color }) => <Text style={{ color: color }}>🗓️</Text>,
+          title: 'Consultas',
         }}
       />
     </Tabs>

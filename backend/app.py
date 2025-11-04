@@ -185,7 +185,7 @@ def login_user():
     if user and check_password_hash(user.password_hash, password_attempt):
 
         access_token = create_access_token(identity=user.id) # criando token de acesso JWT
-        return jsonify(access_token=access_token, message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
+        return jsonify(access_token=access_token,user=user.to_dict(), message=f"Login bem-sucedido! Bem vindo {user.username}"), 200
     
     else:
         return jsonify(message="Usuário ou senha incorretos"), 401 # 401 é codigo de unauthorized
