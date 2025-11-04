@@ -107,8 +107,8 @@ class Appointment(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'doctor_id': self.doctor_id,
-            'appointment_date': self.appointment_date,
-            'created_at': self.created_at
+            'appointment_date': self.appointment_date.isoformat(),
+            'created_at': self.created_at.isoformat()
         }
 
 # rota pra adicionar um usuario
@@ -324,9 +324,24 @@ def get_appointments():
     if not user:
         return jsonify(message="Usuário não encontrado"), 404 # 404 codigo de not found
     
-    user_appointments = user.appointments
+    query = (
+        db.select(Appointment, Doctor)
+        .join(Doctor, Appointment.doctor_id == Doctor.id)
+        .filter(Appointment.user_id == current_user_id)
+        .order_by(Appointment.appointment_date.desc())
+    )
+    results = db.session.execute(query).all()
+    
+    appointment_list = []
 
-    appointment_list = [appointment.to_dict() for appointment in user_appointments]
+    for (appointment, doctor) in results:
+
+        appt_dict = appointment.to_dict()
+        
+        appt_dict['doctor_name'] = doctor.name
+        appt_dict['doctor_specialty'] = doctor.specialty
+        
+        appointment_list.append(appt_dict)
 
     return jsonify(appointments=appointment_list), 200
 
