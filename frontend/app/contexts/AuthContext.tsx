@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../utils/api'; // Nossa API
+import api from '../utils/api'; // nossa API
 import { store } from 'expo-router/build/global-state/router-store';
 
 // define o que o contexto vai guardar
